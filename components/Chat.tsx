@@ -1,12 +1,13 @@
 "use client"
 
 import React, { useState } from 'react'
+import { message, type Message } from './Message';
 // import { Send } from 'lucide-react';
 
 
 function Chat() {
 
-  const [messages, setMessages] = useState<{message: string; sender: string}[]>(
+  const [messages, setMessages] = useState<Message[]>(
     []
   );
   const [input, setInput] = useState("");
@@ -14,7 +15,7 @@ function Chat() {
   const sendMessage = () =>{
     var trim_input = input.trim();
     if (trim_input === "") return;
-    setMessages([...messages, { message: trim_input, sender: "You" }]);
+    setMessages([...messages, { content: trim_input, sender: "You" }]);
     setInput("");
   }
 
