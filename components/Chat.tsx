@@ -1,18 +1,22 @@
 "use client"
 
 import React, { useState, useEffect, useRef} from 'react'
-import { message, type Message } from './Message';
+// import { message, type Message } from './Message';
 import { resolve } from 'path';
-// import { Send } from 'lucide-react';
+
+
+// export type Message = {
+//   sender: string
+//   content?: string
+// }
 
 
 function Chat() {
 
-  const [messages, setMessages] = useState<Message[]>(
-    []
-  );
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const [bitTyping, setBotTyping] = useState(false);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -22,8 +26,13 @@ function Chat() {
   const sendMessage = () =>{
     var trim_input = input.trim();
     if (trim_input === "") return;
-    setMessages([...messages, { content: trim_input, sender: 'user' }]);
+    const newMessage = {role: "user", parts: [{ text: trim_input}]};
+    setMessages([...messages, newMessage]);
     setInput("");
+    getChatbotResponse(messages).then((chatBotResponse) => {
+      const chatBotResponseTrimmed = chatBotResponse.trim();
+      setMessages([...messages, { content: chatBotResponseTrimmed, sender: 'user' }]);
+    })
   }
 
   const clearMessage = () =>{
@@ -33,6 +42,38 @@ function Chat() {
   const botReply = () => {
     setMessages([...messages, { content: 'auto replied', sender: 'bot' }]);
   }
+
+  const getChatbotResponse = async(updatedChatHistory) => {
+    try{
+      const response = await fetch("/api", {
+        method: "POST",
+        headers: {
+          "Content-Type" : "application/json"
+        },
+        body: JSON.stringify(updatedChatHistory),
+      });
+
+      if(!response.ok) throw new Error(`HTTP Error; status: ${response.status}`);
+      setBotTyping(true);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let done = false;
+      let result = "";
+
+      while(!done){
+        const chunk = await reader.read();
+        done = chunk.done;
+        result += decoder.decode(chunk.value, {stream: !done});
+      }
+      console.log("Chatbot response:" , result);
+      return result;
+
+    }catch(error){
+      console.error("Error handling response: ", error);
+    }finally{
+      setBotTyping(false);
+    }
+  };
 
   return (
     // <div className="my-6 mx-60 w-auto flex flex-col gap-5">
