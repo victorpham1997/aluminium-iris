@@ -1,19 +1,13 @@
 "use client"
 
 import React, { useState, useEffect, useRef} from 'react'
-// import { message, type Message } from './Message';
-import { resolve } from 'path';
-
-
-// export type Message = {
-//   sender: string
-//   content?: string
-// }
+import { GoogleGenAI, Content} from "@google/genai";
 
 
 function Chat() {
 
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<Content[]>([]);
+  // const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const [bitTyping, setBotTyping] = useState(false);
@@ -26,12 +20,12 @@ function Chat() {
   const sendMessage = () =>{
     var trim_input = input.trim();
     if (trim_input === "") return;
-    const newMessage = {role: "user", parts: [{ text: trim_input}]};
-    setMessages([...messages, newMessage]);
+    // const newMessage = ;
+    setMessages([...messages, {role: "user", parts: [{text: trim_input}]}]);
     setInput("");
     getChatbotResponse(messages).then((chatBotResponse) => {
-      const chatBotResponseTrimmed = chatBotResponse.trim();
-      setMessages([...messages, { content: chatBotResponseTrimmed, sender: 'user' }]);
+      const chatBotResponseTrimmed = chatBotResponse?.trim();
+      // setMessages([...messages, {role: "model", parts: [{text: chatBotResponseTrimmed}]}]);
     })
   }
 
@@ -40,20 +34,22 @@ function Chat() {
   }
 
   const botReply = () => {
-    setMessages([...messages, { content: 'auto replied', sender: 'bot' }]);
+    setMessages([...messages, {role: "model", parts: [{text: "AUTO REPLIED"}]}]);
   }
 
-  const getChatbotResponse = async(updatedChatHistory) => {
+  const getChatbotResponse = async(updatedMessages: Content[]) => {
     try{
       const response = await fetch("/api", {
         method: "POST",
         headers: {
           "Content-Type" : "application/json"
         },
-        body: JSON.stringify(updatedChatHistory),
+        body: JSON.stringify(updatedMessages),
       });
 
-      if(!response.ok) throw new Error(`HTTP Error; status: ${response.status}`);
+      if(!response.ok || !response.body){
+        throw new Error(`HTTP Error; status: ${response.status}`)
+      };
       setBotTyping(true);
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
@@ -99,12 +95,15 @@ function Chat() {
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {messages && 
         messages.length > 0 && 
-        messages.map(({sender, content}, index) => {
+        messages.map(({role, parts}, index) => { 
           return (
-            <div key={index} className={"flex " + (sender=='user' ? '': 'justify-end')}>
-              <p className={"bg-gray-900 p-3 rounded-lg max-w-md text-right" }>
-                {sender}:{content}
-              </p>
+            <div key={index} className={"flex " + (role=='user' ? '': 'justify-end')}>
+                {parts?.map(({text}, i) => (
+                  <p key={i} className="bg-gray-900 p-3 rounded-lg max-w-md text-right">
+                    {text}
+                  </p>
+                ))}
+                
             </div>
           )
         })}

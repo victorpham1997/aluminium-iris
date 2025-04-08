@@ -1,11 +1,15 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI, Content} from "@google/genai";
 import { NextResponse } from 'next/server';
 import { type } from 'os';
 
 
 const apiKey = "";
-const genAI = new GoogleGenerativeAI({apiKey});
-const model = genAI.getGenerativeModel({model: "gemini-1.5-flash" });
+const ai = new GoogleGenAI({apiKey: apiKey});
+const model = "gemini-2.0-flash";
+const systemInstruction = "You are a close friend, respond as if you want to help the user.";
+
+// const model = genAI.getGenerativeModel({model: "gemini-2.0-flash" });
+
 
 export async function POST(request) {
     try{
@@ -14,13 +18,20 @@ export async function POST(request) {
             return NextResponse.json({error: "Invalid chat history format"}, {status: 400});
         }
 
-        const prompt = "You are a close friend, respond as if you want to help the user.";
         console.log("Sending request to Google API");
+        console.log(JSON.stringify(chatHistory));
 
-        const response = await model.generateContentStream({
+        const response = await ai.models.generateContentStream({
+            model: model,
             contents: chatHistory,
-            systemInstruction: prompt
+            config: {
+                systemInstruction: systemInstruction,
+            }
         });
+        
+        for await (const chunk of response) {
+            console.log(chunk.text);
+        }
 
         console.log("Raw API response:", {response});
 
