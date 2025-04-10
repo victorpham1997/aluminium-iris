@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef} from 'react'
+import Client from "voicevox-client";
 import { GoogleGenAI, Content} from "@google/genai";
 
 
@@ -11,6 +12,8 @@ function Chat() {
   const [input, setInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const [bitTyping, setBotTyping] = useState(false);
+  const client = new Client("http://0.0.0.0:50021");
+
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -20,14 +23,21 @@ function Chat() {
   const sendMessage = () =>{
     var trim_input = input.trim();
     if (trim_input === "") return;
-    // const newMessage = ;
-    setMessages([...messages, {role: "user", parts: [{text: trim_input}]}]);
+    const newMessage = {role: "user", parts: [{text: trim_input}]};
+    const chatHistory = [...messages, newMessage];
+    setMessages(chatHistory);
     setInput("");
-    getChatbotResponse(messages).then((chatBotResponse) => {
-      const chatBotResponseTrimmed = chatBotResponse?.trim();
-      // setMessages([...messages, {role: "model", parts: [{text: chatBotResponseTrimmed}]}]);
-    })
-  }
+    // console.log("req body:" , JSON.stringify(messages));
+    getChatbotResponse(chatHistory).then((chatBotResponse) => {
+
+      // console.log("BOT REPLY: ", chatBotResponse)
+      // const chatBotResponseTrimmed = chatBotResponse?.trim();
+      // const chatBotReply = {role: "model", parts: [{text: chatBotResponseTrimmed}]};
+      // setMessages([...chatHistory, chatBotReply]);
+
+      // // const chatHistory = [...messages, {role: "model", parts: [{text: chatBotResponseTrimmed}]}];
+      // // setMessages(chatHistory);
+    })};
 
   const clearMessage = () =>{
     setMessages([]);
@@ -35,6 +45,12 @@ function Chat() {
 
   const botReply = () => {
     setMessages([...messages, {role: "model", parts: [{text: "AUTO REPLIED"}]}]);
+  }
+
+  const botReplyVoice = async () => {
+    const audioquery = await client.createAudioQuery("こんにちは", 1);
+    const out = await audioquery.synthesis(1);
+    console.log(out);
   }
 
   const getChatbotResponse = async(updatedMessages: Content[]) => {
@@ -55,11 +71,17 @@ function Chat() {
       const decoder = new TextDecoder("utf-8");
       let done = false;
       let result = "";
+      setMessages([...updatedMessages, {role: "model", parts: [{text: ""}]}])
 
       while(!done){
         const chunk = await reader.read();
         done = chunk.done;
         result += decoder.decode(chunk.value, {stream: !done});
+        setMessages((prev) =>
+          prev.map((msg, idx) =>
+            idx === prev.length - 1 ? { ...msg, parts: [{text: result}] } : msg
+          )
+        );
       }
       console.log("Chatbot response:" , result);
       return result;
@@ -85,7 +107,7 @@ function Chat() {
             Clear
         </button>
         <button
-            onClick={botReply}
+            onClick={botReplyVoice}
             className="bg-blue-500 text-white w-fit px-4 py-2 rounded-2xl text-center"
           >
             Bot reply
@@ -99,7 +121,7 @@ function Chat() {
           return (
             <div key={index} className={"flex " + (role=='user' ? '': 'justify-end')}>
                 {parts?.map(({text}, i) => (
-                  <p key={i} className="bg-gray-900 p-3 rounded-lg max-w-md text-right">
+                  <p key={i} className="bg-gray-900 p-3 rounded-lg max-w-md">
                     {text}
                   </p>
                 ))}

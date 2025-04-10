@@ -14,7 +14,8 @@
     "@google/generative-ai": "^0.24.0",
     "next": "^15.2.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "voicevox-client": "^0.3.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
