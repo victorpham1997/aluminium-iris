@@ -11,7 +11,7 @@ function Chat() {
   // const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-  const [bitTyping, setBotTyping] = useState(false);
+  const [botTyping, setBotTyping] = useState(false);
   const client = new Client("http://0.0.0.0:50021");
 
 
@@ -55,7 +55,7 @@ function Chat() {
 
   const getChatbotResponse = async(updatedMessages: Content[]) => {
     try{
-      const response = await fetch("/api", {
+      const response = await fetch("/api/gemini", {
         method: "POST",
         headers: {
           "Content-Type" : "application/json"
