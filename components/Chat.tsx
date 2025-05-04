@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef} from 'react'
-import Client from "voicevox-client";
+// import Client from "voicevox-client";
 import { GoogleGenAI, Content} from "@google/genai";
 
 
@@ -12,7 +12,9 @@ function Chat() {
   const [input, setInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const [botTyping, setBotTyping] = useState(false);
-  const client = new Client("http://0.0.0.0:50021");
+  const VOICEVOX_API_KEY = 'N5y492108606g-5'
+
+  // const client = new Client("http://0.0.0.0:50021");
 
 
   useEffect(() => {
@@ -29,6 +31,9 @@ function Chat() {
     setInput("");
     // console.log("req body:" , JSON.stringify(messages));
     getChatbotResponse(chatHistory).then((chatBotResponse) => {
+
+      
+      
 
       // console.log("BOT REPLY: ", chatBotResponse)
       // const chatBotResponseTrimmed = chatBotResponse?.trim();
@@ -48,14 +53,15 @@ function Chat() {
   }
 
   const botReplyVoice = async () => {
-    const audioquery = await client.createAudioQuery("こんにちは", 1);
-    const out = await audioquery.synthesis(1);
-    console.log(out);
+    // const audioquery = await client.createAudioQuery("こんにちは", 1);
+    // const out = await audioquery.synthesis(1);
+    // console.log(out);
   }
 
   const getChatbotResponse = async(updatedMessages: Content[]) => {
     try{
-      const response = await fetch("/api/gemini", {
+      setBotTyping(true);
+      const textResponse = await fetch("/api/gemini", {
         method: "POST",
         headers: {
           "Content-Type" : "application/json"
@@ -63,11 +69,10 @@ function Chat() {
         body: JSON.stringify(updatedMessages),
       });
 
-      if(!response.ok || !response.body){
-        throw new Error(`HTTP Error; status: ${response.status}`)
+      if(!textResponse.ok || !textResponse.body){
+        throw new Error(`HTTP Error; status: ${textResponse.status}`)
       };
-      setBotTyping(true);
-      const reader = response.body.getReader();
+      const reader = textResponse.body.getReader();
       const decoder = new TextDecoder("utf-8");
       let done = false;
       let result = "";
@@ -83,11 +88,35 @@ function Chat() {
           )
         );
       }
-      console.log("Chatbot response:" , result);
+      console.log("Chatbot textResponse:" , result);
+
+      const audioResponse = await fetch("/api/voicevox", {
+        method: "POST",
+        headers: {
+          "Content-Type" : "text"
+        },
+        body: result,
+      });
+
+
+
+      // const audioResponse = await fetch(`https://deprecatedapis.tts.quest/v2/voicevox/audio/?text=${result}&key=${VOICEVOX_API_KEY}`, 
+      //   {method: 'GET'});
+
+      // console.log("Sending request to VoiceVox su-shiki server");
+      // if(!audioResponse.ok){
+      //   console.error("VoiceVox su-shiki server returned invalid textResponse:",  audioResponse);
+      // };
+      // const textResponseBlob = await audioResponse.blob();
+      // const audioUrl = URL.createObjectURL(textResponseBlob); // Convert Blob to object URL
+      // const audio = new Audio(audioUrl); // Create audio element
+      // audio.play();
+
+
       return result;
 
     }catch(error){
-      console.error("Error handling response: ", error);
+      console.error("Error handling textResponse: ", error);
     }finally{
       setBotTyping(false);
     }

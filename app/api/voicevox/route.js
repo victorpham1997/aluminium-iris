@@ -1,59 +1,24 @@
 import { NextResponse } from 'next/server';
 // https://melodyxpot.medium.com/how-to-add-speech-to-text-into-your-next-js-app-af7f008f9d7b
 
+const VOICEVOX_API_KEY = 'N5y492108606g-5'
+// 'https://deprecatedapis.tts.quest/v2/voicevox/audio/?text='
+
 export async function POST(request) {
     try{
-        const chatHistory = await request.json();
-        if (!Array.isArray(chatHistory)){
-            return NextResponse.json({error: "Invalid chat history format"}, {status: 400});
-        }
+        const japaneseInput = request;
+        const response = await fetch(`https://deprecatedapis.tts.quest/v2/voicevox/audio/?text=${japaneseInput}&key=${VOICEVOX_API_KEY}`, 
+            {method: 'GET'});
 
-        console.log("Sending request to Google API");
-        console.log(JSON.stringify(chatHistory));
+        console.log("Sending request to VoiceVox su-shiki server");
+        console.log(japaneseInput);
 
-        const response = await ai.models.generateContentStream({
-            model: model,
-            contents: chatHistory,
-            config: {
-                systemInstruction: systemInstruction,
-            }
-        });
-        
-        // for await (const chunk of response) {
-        //     console.log(chunk.text);
-        // }
-
-        // console.log("Raw API response:", {response});
-
-        if(!response || typeof response !== "object"){
-            console.error("API returned invalid response:",  response);
-            return NextResponse.json({error: "Gemeni API returned invalid response"}, {status: 500});
+        if(!response.ok){
+            console.error("VoiceVox su-shiki server returned invalid response:",  response);
+            return NextResponse.json({error: "VoiceVox su-shiki server returned invalid response"}, {status: 500});
         };
 
-        const {readable, writable} = new TransformStream();
-        const writer = writable.getWriter();
-        const encoder = new TextEncoder();
-
-        (async () => {
-            try {
-                for await (const chunk of response) {
-                    if(chunk.text){
-                        // console.log('')
-                        console.log(chunk.text);
-                        await writer.write(encoder.encode(chunk.text + "\n"));
-                    }
-                }
-
-            }catch(error){
-                console.error("Unable to process Gemini API response stream: ", error);
-            }finally{
-                writer.close();
-            }
-        })();
-
-        return new Response( readable, {
-            headers: ({"Content-Type" : "text/plain"})
-        });
+        return new NextResponse(response.body, {headers:{'Content-Type': 'audio/wav'} })
 
     }catch(error){
         console.error("Error generating content:", error);
